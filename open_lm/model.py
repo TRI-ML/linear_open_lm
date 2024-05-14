@@ -115,8 +115,6 @@ class Params:
     use_decay: bool = False
 
 
-
-
 def get_pos_embed(args: Params):
     head_dim = args.dim // args.n_heads
     if args.positional_embedding_type == "rotary":
@@ -138,7 +136,11 @@ class CustomAttn(nn.Module):
         self.qk_head_dim = args.qk_head_dim
         self.v_head_dim = args.v_head_dim
         self.n_heads_kv = args.n_heads_kv
-        self.in_proj = nn.Linear(args.dim, (args.n_heads * self.qk_head_dim + self.n_heads_kv * self.qk_head_dim + self.n_heads_kv * self.v_head_dim), bias=False)
+        self.in_proj = nn.Linear(
+            args.dim,
+            (args.n_heads * self.qk_head_dim + self.n_heads_kv * self.qk_head_dim + self.n_heads_kv * self.v_head_dim),
+            bias=False,
+        )
         self.out_proj = nn.Linear(args.n_heads * self.v_head_dim, args.dim, bias=False)
         self.pos_embed = get_pos_embed(args)
         self.attn_fn = args.attn_func
@@ -176,7 +178,7 @@ class CustomAttn(nn.Module):
         torch.nn.init.trunc_normal_(self.out_proj.weight, std=std, a=-3 * std, b=3 * std)
 
     def repeat_kv(self, hidden_states, n_rep):
-        if n_rep==1:
+        if n_rep == 1:
             return hidden_states
         hidden_states2 = hidden_states.transpose(1, 2)
         batch, num_key_value_heads, slen, head_dim = hidden_states2.shape
@@ -185,7 +187,10 @@ class CustomAttn(nn.Module):
 
     def forward(self, x: torch.Tensor, is_causal=True, past_key_value=None, use_cache=False, attention_mask=None):
         batchsize, q_len, _ = x.shape
-        queries, keys, vals = self.in_proj(x).split([self.n_heads * self.qk_head_dim, self.n_heads_kv * self.qk_head_dim, self.n_heads_kv * self.v_head_dim], dim=-1)
+        queries, keys, vals = self.in_proj(x).split(
+            [self.n_heads * self.qk_head_dim, self.n_heads_kv * self.qk_head_dim, self.n_heads_kv * self.v_head_dim],
+            dim=-1,
+        )
 
         queries = self.q_norm(queries)
         keys = self.k_norm(keys)
@@ -245,12 +250,12 @@ def get_slopes_power_of_2(n, start):
     ratio = 2 ** (-(2 ** -(math.log2(n) - 3)))
     if start is None:
         start = ratio
-    return [start * ratio**i for i in range(n)]
+    return [start * ratio ** i for i in range(n)]
 
 
 def get_slopes(n, start):
     """
-    This function returns a list of slopes for the linear attention function. 
+    This function returns a list of slopes for the linear attention function.
     It is taken from the lightning attention code.
     n: number of attention heads
     start: (optional) start value for the slope tensor
@@ -269,7 +274,13 @@ def get_slopes(n, start):
         )
 
 
-def get_slope_tensor(n_attention_heads: int, start: float=None, use_retnet_slopes: bool=False, device: torch.device=None, dtype: torch.dtype=None):
+def get_slope_tensor(
+    n_attention_heads: int,
+    start: float = None,
+    use_retnet_slopes: bool = False,
+    device: torch.device = None,
+    dtype: torch.dtype = None,
+):
     """
     This function returns a tensor of slopes for the linear attention function. This determines the decay of the attention function.
     n_attention_heads: number of attention heads
@@ -285,14 +296,17 @@ def get_slope_tensor(n_attention_heads: int, start: float=None, use_retnet_slope
     else:
         # h, 1, 1
         slopes = torch.tensor(get_slopes(n_attention_heads, start), dtype=dtype, device=device).reshape(
-            n_attention_heads, 1,
+            n_attention_heads,
+            1,
         )
     return slopes
 
 
-def recurrent_forward(queries, keys, vals, s, qk_scale=1, start=None, use_decay=False, use_retnet_slopes=False) -> Tuple[torch.Tensor, torch.Tensor]:
+def recurrent_forward(
+    queries, keys, vals, s, qk_scale=1, start=None, use_decay=False, use_retnet_slopes=False
+) -> Tuple[torch.Tensor, torch.Tensor]:
     """
-    This function computes the output of the linear attention function in a recurrent manner. 
+    This function computes the output of the linear attention function in a recurrent manner.
     Its result is equivalent to the parallel computation of the linear attention function.
     queries: queries, shape (batch_size, num_heads, seq_len, dim_qk)
     keys: keys, shape (batch_size, num_heads, seq_len, dim_qk)
@@ -305,7 +319,7 @@ def recurrent_forward(queries, keys, vals, s, qk_scale=1, start=None, use_decay=
     """
     if use_decay:
         slope = get_slope_tensor(queries.shape[1], start, use_retnet_slopes, queries.device, queries.dtype)
-        gamma = torch.exp(- slope).reshape(1, queries.shape[1], 1, 1)
+        gamma = torch.exp(-slope).reshape(1, queries.shape[1], 1, 1)
     else:
         gamma = 1.0
     s_n = s + (keys.transpose(-1, -2) * qk_scale) @ vals
@@ -313,9 +327,11 @@ def recurrent_forward(queries, keys, vals, s, qk_scale=1, start=None, use_decay=
     return output, gamma * s_n
 
 
-def lightning_attn_func(q, k, v, qk_scale: float, start: float = None, use_decay: bool = True, use_retnet_slopes=False) -> torch.Tensor:
+def lightning_attn_func(
+    q, k, v, qk_scale: float, start: float = None, use_decay: bool = True, use_retnet_slopes=False
+) -> torch.Tensor:
     """
-    This is the lightning attention function, which is a kernel linear approximation of the softmax function 
+    This is the lightning attention function, which is a kernel linear approximation of the softmax function
     Almost the same as linear_attn_func but using the triton kernel from lightning_attn and a decaying factor (from RetNet paper https://arxiv.org/pdf/2307.08621.pdf)
     as defined by the depth_slope_tensor function (using no_slope_tensor is equivalent to linear_attn_func).
     Args:
@@ -344,6 +360,7 @@ class LinearAttn(nn.Module):
     The forward method can be run in parallel or recurrent mode depending on the use_cache parameter,
     which folows the same logic as the CustomAttn class with qk_cache or without it.
     """
+
     def __init__(self, layer_id, args: Params):
         super().__init__()
         self.params = args
@@ -354,15 +371,25 @@ class LinearAttn(nn.Module):
         self.v_head_dim = args.v_head_dim
 
         self.qk_in_head_dim = args.dim // args.n_heads
-        self.in_proj = nn.Linear(args.dim, (args.n_heads * self.qk_in_head_dim + self.n_heads_kv * self.qk_in_head_dim + self.n_heads_kv * self.v_head_dim), bias=False)
-        
+        self.in_proj = nn.Linear(
+            args.dim,
+            (
+                args.n_heads * self.qk_in_head_dim
+                + self.n_heads_kv * self.qk_in_head_dim
+                + self.n_heads_kv * self.v_head_dim
+            ),
+            bias=False,
+        )
+
         self.out_proj = nn.Linear(args.n_heads * self.v_head_dim, args.dim, bias=False)
 
         self.pos_embed = get_pos_embed(args)
 
         self.apply_qk_norm = args.apply_qk_norm
 
-        self._totrain_gn = nn.GroupNorm(num_groups=args.n_heads, num_channels=args.n_heads * self.v_head_dim, affine=False)
+        self._totrain_gn = nn.GroupNorm(
+            num_groups=args.n_heads, num_channels=args.n_heads * self.v_head_dim, affine=False
+        )
 
         self._totrain_embed = nn.Linear(
             args.n_heads * self.qk_in_head_dim,
@@ -375,8 +402,18 @@ class LinearAttn(nn.Module):
                 args.n_heads_kv * self.qk_head_dim,
             )
 
-        self.linear_attn_fn = partial(lightning_attn_func, use_decay=args.use_decay, use_retnet_slopes=args.use_retnet_slopes, start=args.decay_start)
-        self.recurrent_forward_fn = partial(recurrent_forward, use_decay=args.use_decay, use_retnet_slopes=args.use_retnet_slopes, start=args.decay_start)
+        self.linear_attn_fn = partial(
+            lightning_attn_func,
+            use_decay=args.use_decay,
+            use_retnet_slopes=args.use_retnet_slopes,
+            start=args.decay_start,
+        )
+        self.recurrent_forward_fn = partial(
+            recurrent_forward,
+            use_decay=args.use_decay,
+            use_retnet_slopes=args.use_retnet_slopes,
+            start=args.decay_start,
+        )
 
         self.mask = None
 
@@ -421,7 +458,7 @@ class LinearAttn(nn.Module):
         batch, num_key_value_heads, slen, head_dim = hidden_states2.shape
         hidden_states2 = hidden_states2[:, :, None, :, :].expand(batch, num_key_value_heads, n_rep, slen, head_dim)
         return hidden_states2.reshape(batch, num_key_value_heads * n_rep, slen, head_dim).transpose(1, 2)
-    
+
     def _set_mask(self, seqlen: int, device):
         if self.mask is None or self.mask.shape[-1] < seqlen:
             self.mask = torch.tril(torch.ones(1, 1, seqlen, seqlen, requires_grad=False), diagonal=0).to(device)
@@ -432,20 +469,37 @@ class LinearAttn(nn.Module):
         It re-uses the projection layer from a usual transformer model and applies the kernels to the queries and keys (one layer + relu).
         """
         batchsize, seqlen, _ = x.shape
-        queries, keys, vals = self.in_proj(x).split([self.n_heads * self.qk_in_head_dim, self.n_heads_kv * self.qk_in_head_dim, self.n_heads_kv * self.v_head_dim], dim=-1)
+        queries, keys, vals = self.in_proj(x).split(
+            [
+                self.n_heads * self.qk_in_head_dim,
+                self.n_heads_kv * self.qk_in_head_dim,
+                self.n_heads_kv * self.v_head_dim,
+            ],
+            dim=-1,
+        )
         vals = vals.view(batchsize, seqlen, self.n_heads_kv, self.v_head_dim)
-    
-        queries = F.relu(self._totrain_embed(queries.view(batchsize, seqlen, self.n_heads * self.qk_in_head_dim))).view(batchsize, seqlen, self.n_heads, self.qk_head_dim)
+
+        queries = F.relu(self._totrain_embed(queries.view(batchsize, seqlen, self.n_heads * self.qk_in_head_dim))).view(
+            batchsize, seqlen, self.n_heads, self.qk_head_dim
+        )
         if self.n_heads != self.n_heads_kv:
-            keys = F.relu(self._totrain_embed_kv(keys.view(batchsize, seqlen, self.n_heads_kv * self.qk_in_head_dim))).view(batchsize, seqlen, self.n_heads_kv, self.qk_head_dim)
+            keys = F.relu(
+                self._totrain_embed_kv(keys.view(batchsize, seqlen, self.n_heads_kv * self.qk_in_head_dim))
+            ).view(batchsize, seqlen, self.n_heads_kv, self.qk_head_dim)
         else:
-            keys = F.relu(self._totrain_embed(keys.view(batchsize, seqlen, self.n_heads_kv * self.qk_in_head_dim))).view(batchsize, seqlen, self.n_heads_kv, self.qk_head_dim)
+            keys = F.relu(
+                self._totrain_embed(keys.view(batchsize, seqlen, self.n_heads_kv * self.qk_in_head_dim))
+            ).view(batchsize, seqlen, self.n_heads_kv, self.qk_head_dim)
 
         keys = self.repeat_kv(keys, n_rep=self.n_heads // self.n_heads_kv)
         vals = self.repeat_kv(vals, n_rep=self.n_heads // self.n_heads_kv)
 
-        queries = self._totrain_q_norm(queries.view(batchsize, seqlen, self.n_heads * self.qk_head_dim)).view(batchsize, seqlen, self.n_heads, self.qk_head_dim)
-        keys = self._totrain_k_norm(keys.reshape(batchsize, seqlen, self.n_heads * self.qk_head_dim)).view(batchsize, seqlen, self.n_heads, self.qk_head_dim)
+        queries = self._totrain_q_norm(queries.view(batchsize, seqlen, self.n_heads * self.qk_head_dim)).view(
+            batchsize, seqlen, self.n_heads, self.qk_head_dim
+        )
+        keys = self._totrain_k_norm(keys.reshape(batchsize, seqlen, self.n_heads * self.qk_head_dim)).view(
+            batchsize, seqlen, self.n_heads, self.qk_head_dim
+        )
 
         queries, keys, vals = self.pos_embed(
             queries,
@@ -467,9 +521,7 @@ class LinearAttn(nn.Module):
         output = output.transpose(1, 2).contiguous()
         batchsize, seqlen = output.shape[:2]
 
-        output = self._totrain_gn(
-                output.reshape(batchsize * seqlen, self.v_head_dim * self.n_heads)
-            )
+        output = self._totrain_gn(output.reshape(batchsize * seqlen, self.v_head_dim * self.n_heads))
 
         output = output.view(batchsize, seqlen, self.v_head_dim * self.n_heads)
 
@@ -478,12 +530,7 @@ class LinearAttn(nn.Module):
         return output
 
     def forward(
-        self,
-        x: torch.Tensor,
-        is_causal: bool = True,
-        past_key_value=None,
-        use_cache=False,
-        attention_mask=None
+        self, x: torch.Tensor, is_causal: bool = True, past_key_value=None, use_cache=False, attention_mask=None
     ):
         """
         Run the linear attention function either in parallel (use_cache=False) or recurrent mode (use_cache=True).
@@ -546,12 +593,14 @@ class LinearAttn(nn.Module):
 
         out = []
         for i in range(x.shape[1]):
-            output, s = self.recurrent_forward_fn(queries[:, :, i:i+1], keys[:, :, i:i+1], vals[:, :, i:i+1], s, qk_scale=self.qk_scale)
+            output, s = self.recurrent_forward_fn(
+                queries[:, :, i : i + 1], keys[:, :, i : i + 1], vals[:, :, i : i + 1], s, qk_scale=self.qk_scale
+            )
             out.append(output)
 
         output = torch.cat(out, dim=2)
         return self._output(output), s
-    
+
 
 ##########################################################
 
@@ -618,7 +667,11 @@ class Block(nn.Module):
 
         self._ffn_type = args.ffn_type
         # this follows llama / lit llama -- go to multiple of 256
-        self.hidden_dim = 256 * ((int(2 * 4 * args.dim / 3) + 256 - 1) // 256) if args.intermediate_dim_ffn is None else args.intermediate_dim_ffn
+        self.hidden_dim = (
+            256 * ((int(2 * 4 * args.dim / 3) + 256 - 1) // 256)
+            if args.intermediate_dim_ffn is None
+            else args.intermediate_dim_ffn
+        )
         if args.ffn_type == "swiglu":
             self.feed_forward = xops.SwiGLU(args.dim, self.hidden_dim, args.dim, bias=False)
         elif args.ffn_type == "swiglu_torch":

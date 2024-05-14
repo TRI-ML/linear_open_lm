@@ -79,7 +79,7 @@ def main():
     if "gpt-neox-20b" in args.tokenizer:
         tokenizer = GPTNeoXTokenizerFast.from_pretrained("EleutherAI/gpt-neox-20b")
     else:
-        # mistralai/Mistral-7B-v0.1, meta-llama/Llama-2-7b-chat-hf, 
+        # mistralai/Mistral-7B-v0.1, meta-llama/Llama-2-7b-chat-hf,
         tokenizer = AutoTokenizer.from_pretrained(args.tokenizer)
 
     if args.checkpoint is not None:

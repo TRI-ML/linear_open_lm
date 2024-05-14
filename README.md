@@ -1,8 +1,6 @@
 # Linear OpenLM
 
-This repository is a fork of the original OpenLM repository. The original repository can be found [here](https://github.com/mlfoundations/open_lm).
-
-Here we provide the modifications to the OpenLM code to train or uptrain linear attention models. For more details see the ArXiv paper [Linearizing Large Language Models](https://arxiv.org/abs/). 
+This repository contains the code for [Linearizing Large Language Models](https://arxiv.org/abs/2405.06640). This is a fork of the original [OpenLM repository](https://github.com/mlfoundations/open_lm).
 
 ## How to train a linear model
 
@@ -69,25 +67,9 @@ python scripts/generate.py \
 
 # OpenLM
 
-![](/plots/logo.png)
+This part is copied from the original OpenLM repository, only the paragraph used in the linear models are kept.
+Refer to the original repository for more information.
 
-OpenLM is a minimal but performative language modeling (LM) repository, aimed to facilitate research on medium sized LMs. We have verified the performance of OpenLM up to 7B parameters and 256 GPUs.
-In contrast with other repositories such as Megatron, we depend only on PyTorch, XFormers, or Triton for our core modeling code.
-
-# Contents
-- [Release Notes](#release-notes)
-- [Quickstart](#quickstart)
-  - [Setup](#setup)
-  - [Process training data](#process-training-data)
-  - [Run training](#run-training)
-  - [Evaluate Model](#evaluate-model)
-  - [Generate Text](#generate-text)
-- [Pretrained Models](#pretrained-models)
-- [Team and Acknowledgements](#team-and-acknowledgements)
-
-# Release Notes
-- 09/26/23: Public release and featured on [Laion Blog](https://laion.ai/blog/open-lm/)
-- 08/18/23: Updated README.md
 # Quickstart
 Here we'll go over a basic example where we start from a fresh install, download and preprocess some training data, and train a model.
 
@@ -240,113 +222,242 @@ python generate.py \
 --input-text "Please give me a recipe for chocolate chip cookies"
 ```
 
-Again, note that `--positional-embedding-type head_rotary` is only necessary for the pretrained `open_lm_1b` model hosted below. 
+# Pre-trained Models
 
-# Pretrained Models
+We provide the following pre-trained models:
+- [`Mistral-SUPRA-7B`](https://huggingface.co/TRI-ML/mistral-supra): Our method uptraining the Mistral-7B model on 100B tokens of refined web into an RNN.
+- [`Mamba-7B`](https://huggingface.co/TRI-ML/mamba-7b-rw): Our baseline model that we trained on 1.2T tokens of refined web (2 epochs) in the present repository. See the [Mamba repo](https://github.com/state-spaces/mamba) for the original code.
 
-## [OpenLM 1B](https://huggingface.co/mlfoundations/open_lm_1B)
-OpenLM 1B is a ~1Billion parameter model trained on a 1.6T token dataset which consists of a mix of RedPajama, Pile, S2ORC, The Pile of Law, Deepmind Math, and RealNews (the full mixture of training data is described in [more detail here](https://docs.google.com/spreadsheets/d/1YW-_1vGsSPmVtEt2oeeJOecH6dYX2SuEuhOwZyGwy4k/edit?usp=sharing)).
-The model checkpoint can be downloaded from [HuggingFace here](https://huggingface.co/mlfoundations/open_lm_1B/tree/main).
-The script used to train this model (for config-copying purposes) is [located here](https://github.com/mlfoundations/open_lm/blob/main/scripts/train_example.sh).
-Once this checkpoint has been downloaded, you can evaluate it by following the directions in the [Evaluate Model](#evaluate-model) section above and passing `--positional-embedding-type head_rotary` or setting `"positional_embedding_type": "head_rotary"` in the model config (see note below).
+<table>
+    <thead>
+        <tr>
+            <th>Model</th>
+            <th>Size</th>
+            <th>Tokens</th>
+            <th>HellaSwag</th>
+            <th>PIQA</th>
+            <th>WG</th>
+            <th>ARC-E</th>
+            <th>ARC-C</th>
+            <th>MMLU</th>
+            <th>Average</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>StableLM2</td>
+            <td>1.6B</td>
+            <td>2000</td>
+            <td>69.0</td>
+            <td>76.7</td>
+            <td>63.6</td>
+            <td>68.6</td>
+            <td>38.9</td>
+            <td>38.4</td>
+            <td>59.2</td>
+        </tr>
+        <tr>
+            <td>StableLM</td>
+            <td>3B</td>
+            <td>1000</td>
+            <td>73.8</td>
+            <td>79.3</td>
+            <td>65.8</td>
+            <td>72.1</td>
+            <td>40.0</td>
+            <td>44.2</td>
+            <td>62.5</td>
+        </tr>
+        <tr>
+            <td>Gemma</td>
+            <td>2B</td>
+            <td>2000</td>
+            <td>71.4</td>
+            <td>78.6</td>
+            <td>64.4</td>
+            <td>74.0</td>
+            <td>41.5</td>
+            <td>41.2</td>
+            <td>61.9</td>
+        </tr>
+        <tr style="background-color: #f0f0f0;">
+            <td>Mamba</td>
+            <td>1.4B</td>
+            <td>600</td>
+            <td>59.0</td>
+            <td>73.9</td>
+            <td>61.4</td>
+            <td>65.5</td>
+            <td>32.9</td>
+            <td>25.2</td>
+            <td>53.0</td>
+        </tr>
+        <tr style="background-color: #f0f0f0;">
+            <td>RWKV-5</td>
+            <td>1.5B</td>
+            <td>1100</td>
+            <td>53.1</td>
+            <td>71.6</td>
+            <td>59.0</td>
+            <td>62.2</td>
+            <td>32.7</td>
+            <td>26.2</td>
+            <td>50.8</td>
+        </tr>
+        <tr style="background-color: #f0f0f0;">
+            <td>Mamba</td>
+            <td>2.8B</td>
+            <td>600</td>
+            <td><b>66.2</b></td>
+            <td><b>75.8</b></td>
+            <td><b>63.4</b></td>
+            <td><b>69.7</b></td>
+            <td><b>36.3</b></td>
+            <td><b>26.3</b></td>
+            <td><b>56.3</b></td>
+        </tr>
+        <tr>
+            <td>Llama2</td>
+            <td>7B</td>
+            <td>2000</td>
+            <td>76.0</td>
+            <td>79.1</td>
+            <td>69.1</td>
+            <td>76.3</td>
+            <td>46.3</td>
+            <td>45.9</td>
+            <td>65.4</td>
+        </tr>
+        <tr>
+            <td>Gemma</td>
+            <td>7B</td>
+            <td>6000</td>
+            <td>80.7</td>
+            <td>81.9</td>
+            <td>73.7</td>
+            <td><b>81.1</b></td>
+            <td>53.2</td>
+            <td><b>62.9</b></td>
+            <td>72.2</td>
+        </tr>
+        <tr>
+            <td>Mistral</td>
+            <td>7B</td>
+            <td>8000(?)</td>
+            <td><b>81.0</b></td>
+            <td><b>82.1</b></td>
+            <td><b>74.0</b></td>
+            <td>80.9</td>
+            <td><b>53.8</td>
+            <td>62.4</td>
+            <td><b>72.4</b></td>
+        </tr>
+        <tr style="background-color: #f0f0f0;">
+            <td>RetNet</td>
+            <td>6.7B</td>
+            <td>200</td>
+            <td>60.7</td>
+            <td>75.4</td>
+            <td>58.1</td>
+            <td>--</td>
+            <td>--</td>
+            <td>--</td>
+            <td>--</td>
+        </tr>
+        <tr style="background-color: #f0f0f0;">
+            <td>RWKV-5</td>
+            <td>7B</td>
+            <td>1100</td>
+            <td>70.9</td>
+            <td>77.2</td>
+            <td>67.4</td>
+            <td>71.8</td>
+            <td>43.6</td>
+            <td>31.0</td>
+            <td>60.3</td>
+        </tr>
+        <tr style="background-color: #f0f0f0;">
+            <td>RWKV-5-1.7T</td>
+            <td>7B</td>
+            <td>1700</td>
+            <td>73.0</td>
+            <td>78.6</td>
+            <td><b>72.9</b></td>
+            <td>75.8</td>
+            <td>45.6</td>
+            <td><b>34.9</td>
+            <td>63.5</td>
+        </tr>
+        <tr style="background-color: #f0f0f0;">
+            <td>Mamba (ours)</td>
+            <td>7B</td>
+            <td>1200</td>
+            <td><b>77.9</b></td>
+            <td><b>81.0</b></td>
+            <td><u>71.8</u></td>
+            <td><b>77.5</b></td>
+            <td><b>46.7</b></td>
+            <td>33.3</td>
+            <td><b>64.7</b></td>
+        </tr>
+        <tr style="background-color: #f0f0f0;">
+            <td>Llama2-\methodname</td>
+            <td>7B</td>
+            <td>+20</td>
+            <td>71.8</td>
+            <td>78.6</td>
+            <td>65.8</td>
+            <td>71.1</td>
+            <td>39.5</td>
+            <td>24.9</td>
+            <td>58.6</td>
+        </tr>
+        <tr style="background-color: #f0f0f0;">
+            <td>Mistral-\methodname</td>
+            <td>7B</td>
+            <td>+20</td>
+            <td>74.8</td>
+            <td>80.1</td>
+            <td>67.4</td>
+            <td>74.6</td>
+            <td>42.3</td>
+            <td>28.0</td>
+            <td>61.2</td>
+        </tr>
+        <tr style="background-color: #f0f0f0;">
+            <td>Mistral-\methodname</td>
+            <td>7B</td>
+            <td>+100</td>
+            <td><u>77.1</u></td>
+            <td><u>80.4</u></td>
+            <td>70.3</td>
+            <td><u>75.9</u></td>
+            <td><u>45.8</u
+            <td><u>45.8</u></td>
+            <td><u>34.2</u></td>
+            <td><u>64.0</u></td>
+        </tr>
+    </tbody>
+</table>
 
-Note: We trained this model with rotary embeddings applied to the _head_
-dimension, which is the default in xformers as of 09/01/2023. Since these models
-were trained, we have updated openlm to correctly apply the rotary embeddings to
-the sequence dimension (see
-[this issue](https://github.com/mlfoundations/open_lm/issues/4) and [this
-issue](https://github.com/facebookresearch/xformers/issues/841) for details).
-To evaluate these models, ensure you use the `"positional_embedding_type": "head_rotary"` in the model config.
-
-| **OpenLM-1B** | **250B Tokens** | **500B tokens** | **750B tokens** | **1T Tokens** | **1.25T Tokens** | **1.5T Tokens** | **1.6T Tokens** |
-|----------------|-----------------|-----------------|-----------------|---------------|------------------|-----------------|-----------------|
-|                |                 |                 |                 |               |                  |                 |                 |
-| arc_challenge  |            0.27 |            0.28 |            0.29 |          0.28 |             0.29 |            0.31 |            0.31 |
-| arc_easy       |            0.49 |            0.50 |            0.51 |          0.53 |             0.54 |            0.56 |            0.56 |
-| boolq          |            0.60 |            0.61 |            0.62 |          0.62 |             0.65 |            0.64 |            0.65 |
-| copa           |            0.71 |            0.70 |            0.70 |          0.78 |             0.71 |            0.73 |            0.70 |
-| hellaswag      |            0.50 |            0.54 |            0.54 |          0.57 |             0.59 |            0.61 |            0.61 |
-| lambada_openai |            0.56 |            0.57 |            0.61 |          0.61 |             0.65 |            0.65 |            0.66 |
-| piqa           |            0.70 |            0.70 |            0.71 |          0.72 |             0.73 |            0.74 |            0.74 |
-| triviaqa       |                 |                 |                 |               |                  |                 |                 |
-| winogrande     |            0.55 |            0.57 |            0.58 |          0.59 |             0.61 |            0.60 |            0.60 |
-| MMLU           |            0.24 |            0.24 |            0.24 |          0.23 |             0.26 |            0.24 |            0.25 |
-| Jeopardy       |            0.01 |            0.02 |            0.01 |          0.01 |             0.04 |            0.09 |            0.10 |
-| Winograd       |            0.75 |            0.77 |            0.77 |          0.79 |             0.81 |            0.80 |            0.79 |
-|                |                 |                 |                 |               |                  |                 |                 |
-| **Average**    |        **0.49** |        **0.50** |        **0.51** |      **0.52** |         **0.53** |        **0.54** |        **0.54** |
+<p>Linear models (RNNs and SSMs) highlighted in gray. 5-shot results are used for MMLU. Norm results are used for PIQA, HellaSwag, ARC-C. RetNet results taken from RetNet paper.</p>
 
 
-| **1B Baselines** | **OPT-1.3B** | **Pythia-1B** | **Neox-1.3B** | **OPT-IML-1.3B** |
-|------------------|-------------:|--------------:|--------------:|-----------------:|
-| arc_challenge    |         0.27 |          0.26 |          0.26 |             0.30 |
-| arc_easy         |         0.49 |          0.51 |          0.47 |             0.58 |
-| boolq            |         0.58 |          0.61 |          0.62 |             0.72 |
-| copa             |         0.75 |          0.68 |          0.72 |             0.73 |
-| hellaswag        |         0.54 |          0.49 |          0.48 |             0.54 |
-| lambada_openai   |         0.59 |          0.58 |          0.57 |             0.57 |
-| piqa             |         0.72 |          0.70 |          0.72 |             0.73 |
-| triviaqa         |              |               |               |                  |
-| winogrande       |         0.59 |          0.53 |          0.55 |             0.59 |
-| MMLU             |         0.25 |          0.26 |          0.26 |             0.30 |
-| Jeopardy         |         0.01 |          0.00 |          0.00 |             0.12 |
-| Winograd         |         0.74 |          0.71 |          0.75 |             0.73 |
-| **Average**      |     **0.50** |      **0.48** |      **0.49** |         **0.54** |
 
-
-## [OpenLM 7B](https://huggingface.co/mlfoundations/open_lm_7B_1.25T)
-OpenLM 7B is not yet done training, but we've released a checkpoint at 1.25T tokens. Information is the same as for OpenLM-1B above, including the information pertaining to rotary embeddings.
-
-
-| **OpenLM-7B**  | **275B Tokens** | **500B tokens** | **675B tokens** | **775B tokens** | **1T Tokens** | **1.25T Tokens** | **1.5T Tokens** | **1.6T Tokens** | **LLAMA-7B** | **MPT-7B** |
-|-----------------|-----------------|-----------------|-----------------|-----------------|---------------|------------------|-----------------|-----------------|--------------|------------|
-| arc_challenge   |            0.35 |            0.35 |            0.36 |            0.37 |          0.39 |             0.39 |                 |                 |         0.41 |       0.39 |
-| arc_easy        |            0.60 |            0.61 |            0.62 |            0.62 |          0.63 |             0.66 |                 |                 |         0.65 |       0.67 |
-| boolq           |            0.67 |            0.66 |            0.69 |            0.69 |          0.70 |             0.70 |                 |                 |         0.77 |       0.75 |
-| copa            |            0.75 |            0.79 |            0.75 |            0.80 |          0.80 |             0.78 |                 |                 |         0.78 |       0.81 |
-| hellaswag       |            0.64 |            0.67 |            0.68 |            0.68 |          0.69 |             0.70 |                 |                 |         0.75 |       0.76 |
-| lambada_openai  |            0.67 |            0.68 |            0.69 |            0.70 |          0.70 |             0.70 |                 |                 |         0.74 |       0.70 |
-| piqa            |            0.75 |            0.76 |            0.76 |            0.76 |          0.77 |             0.77 |                 |                 |         0.79 |       0.80 |
-| triviaqa        |                 |                 |                 |                 |               |                  |                 |                 |              |            |
-| winogrande      |            0.62 |            0.65 |            0.65 |            0.65 |          0.67 |             0.67 |                 |                 |         0.68 |       0.68 |
-| MMLU-0 shot     |            0.25 |            0.25 |            0.27 |            0.27 |          0.28 |             0.30 |                 |                 |         0.30 |       0.30 |
-| Jeopardy        |            0.15 |            0.18 |            0.23 |            0.22 |          0.16 |             0.21 |                 |                 |         0.33 |       0.31 |
-| Winograd        |            0.82 |            0.81 |            0.84 |            0.84 |          0.85 |             0.86 |                 |                 |         0.81 |       0.88 |
-|                 |                 |                 |                 |                 |               |                  |                 |                 |              |            |
-| **Average**     |        **0.57** |        **0.58** |        **0.60** |        **0.60** |      **0.60** |         **0.61** |                 |                 |     **0.64** |   **0.64** |
-| **MMLU-5 shot** |                 |                 |                 |                 |               |         **0.34** |                 |                 |     **0.34** |            |
-
-# Unit tests
-
-For unit tests we use `pytest`. Either
-
-```
-pip install pytest
-```
-or create the `open_lm_tests` conda environment by running
-```
-conda env create --file environment-tests.yml
-```
-
-Tests live in the `tests/` folder.
-
-To run tests make sure you are on a machine with a GPU and run:
-```
-pytest tests/
-```
-
-# Team and acknowledgements
-
-Team (so-far, * = equal contrib): Suchin Gururangan*, Mitchell Wortsman*, Samir Yitzhak Gadre*, Achal Dave*, Maciej Kilian, Weijia Shi, Jean Mercat, Georgios Smyrnis, Gabriel Ilharco, Matt Jordan, Reinhard Heckel, Alex Dimakis, Ali Farhadi, Vaishaal Shankar*, Ludwig Schmidt.
-
-Code is based heavily on [open-clip](https://github.com/mlfoundations/open_clip) developed by a team including Ross Wightman, Romain Beaumont, Cade Gordon, Mehdi Cherti, Jenia Jitsev, and [open-flamingo](https://github.com/mlfoundations/open_flamingo), developed by a team including Anas Awadalla and Irena Gao. Additional inspiration is from [lit-llama](https://github.com/Lightning-AI/lit-llama).
-We are greatful to stability.ai for resource support.
-OpenLM is developed by researchers from various affiliations including the [RAIVN Lab](https://raivn.cs.washington.edu/) at the University of Washington, [UWNLP](https://nlp.washington.edu/), [Toyota Research Institute](https://www.tri.global/), [Columbia University](https://www.columbia.edu/), and more.
-
-Citation
+Citations
 --------
 
-If you use this model in your work, please use the following BibTeX citation:
+If you use this model in your work, please use the following BibTeX citations:
+
+```bibtex
+@inproceedings{Mercat2024LinearizingLL,
+  title={Linearizing Large Language Models},
+  author={Jean Mercat and Igor Vasiljevic and Sedrick Scott Keh and Kushal Arora and Achal Dave and Adrien Gaidon and Thomas Kollar},
+  year={2024},
+  url={https://arxiv.org/abs/2405.06640}
+}
+```
+
 ```bibtex
 @misc{open_lm,
   author = {Gururangan, Suchin and Wortsman, Mitchell and Gadre, Samir Yitzhak and Dave, Achal and Kilian, Maciej and Shi, Weijia and Mercat, Jean and Smyrnis, Georgios and Ilharco, Gabriel and Jordan, Matt and Heckel, Reinhard and Dimakis, Alex and Farhadi, Ali and Shankar, Vaishaal and Schmidt, Ludwig},

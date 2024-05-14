@@ -59,7 +59,9 @@ class RotaryEmbedding(torch.nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
-        self.inv_freq = 1.0 / (self.scale * self.frequency ** (torch.arange(0, self.dim_model, 2).float() / self.dim_model))
+        self.inv_freq = 1.0 / (
+            self.scale * self.frequency ** (torch.arange(0, self.dim_model, 2).float() / self.dim_model)
+        )
         self._update_cos_sin_tables(self.seq_len)
 
     def _update_cos_sin_tables(self, seq_len: int = None, device: torch.device = None, dtype: torch.dtype = None):

@@ -757,11 +757,7 @@ def main(args):
 
         if args.dataset_manifest is not None:
             assert not args.dataset_resampled, "dataset_manifest and dataset_resampled are mutually exclusive"
-            (
-                train_data_string_per_source,
-                num_samples_per_source,
-                next_shard_per_source,
-            ) = get_string_for_epoch(
+            (train_data_string_per_source, num_samples_per_source, next_shard_per_source,) = get_string_for_epoch(
                 args.train_num_samples,
                 next_shard_per_source,
                 args.dataset_manifest,
