@@ -59,6 +59,12 @@ def add_model_args(parser):
         help="Type of positional embedding to use. This might be overridden by the model config.",
     )
     parser.add_argument(
+        "--linear-freq",
+        type=float,
+        default=0.0,
+        help="if set > 0, we will add linear attention to every linear_freq layer.",
+    )
+    parser.add_argument(
         "--moe-freq",
         type=int,
         default=0,
